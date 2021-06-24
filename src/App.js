@@ -1,23 +1,40 @@
-import logo from './logo.svg';
-import './App.css';
+import { useRef, useState } from "react";
+import "./App.css";
+import { useBabylon } from "./hooks";
 
 function App() {
+  const [currentFile, setCurrentFile] = useState();
+  const renderingCanvas = useRef();
+
+  const handleInputChange = (event) => {
+    setCurrentFile(event.target.files[0]);
+  };
+
+  useBabylon(currentFile, renderingCanvas.current);
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
+    <div className="app-container">
+      <section>
+        <h1>Sample App with Babylon for Texture-Test</h1>
+        <p className="description">
+          You can use files with extensions of .fbx, .glb and .glft. <br />
+          The scene will not re-rendered even after new file is loaded, on
+          purpose. <br />
+          It will take seconds for loading .fbx file. (Because of the usage of
+          the api communication.)
         </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+        <ul className="how-to-use">
+          <li>left click to rotate</li>
+          <li>right click to pan</li>
+          <li>wheel to zoom</li>
+        </ul>
+      </section>
+      <input
+        type="file"
+        accept=".glb, .gltf, .fbx"
+        onChange={handleInputChange}
+      />
+      <canvas id="renderingCanvas" ref={renderingCanvas} />
     </div>
   );
 }
