@@ -2,11 +2,11 @@
 
 ## Description
 
-You can use files with extensions of .fbx, .glb and .glft.
+You can use fbx and glb(glTF) format files.
 
-The scene will not re-rendered even after new file is loaded, on purpose.
+The scene will not be re-rendered even after new file is loaded, on purpose.
 
-It will take seconds for loading .fbx file. (Because of the usage of the api communication.)
+It will take seconds for loading .fbx file. (Because of the api communication)
 
 ## How to use
 

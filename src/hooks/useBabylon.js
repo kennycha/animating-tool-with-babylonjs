@@ -31,7 +31,7 @@ const useBabylon = (currentFile, renderingCanvas) => {
         setCamera(innerCamera);
         // model에 target 지정 시 panning 불가
         innerCamera.setTarget(Vector3.Zero());
-        innerCamera.attachControl(renderingCanvas, true);
+        innerCamera.attachControl(renderingCanvas, false, true);
         innerCamera.allowUpsideDown = false;
 
         innerCamera.inertia = 0.5;
