@@ -17,11 +17,13 @@ function App() {
       <section>
         <h1>Sample App with Babylon for Texture-Test</h1>
         <p className="description">
-          You can use files with extensions of .fbx, .glb and .glft. <br />
-          The scene will not re-rendered even after new file is loaded, on
-          purpose. <br />
-          It will take seconds for loading .fbx file. (Because of the usage of
-          the api communication.)
+          You can use fbx and glb(glTF) format files.
+          <br />
+          The scene will not be re-rendered even after new file is loaded, on
+          purpose.
+          <br />
+          It will take seconds for loading .fbx file. (Because of the api
+          communication)
         </p>
         <ul className="how-to-use">
           <li>left click to rotate</li>
