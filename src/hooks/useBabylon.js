@@ -17,7 +17,7 @@ const useBabylon = (currentFile, renderingCanvas) => {
   // scene이 준비되면 호출할 함수
   const handleSceneReady = useCallback(
     (scene) => {
-      if (renderingCanvas) {
+      if (renderingCanvas.current) {
         // add camera
         const innerCamera = new ArcRotateCamera(
           "camera1",
@@ -31,7 +31,7 @@ const useBabylon = (currentFile, renderingCanvas) => {
         setCamera(innerCamera);
         // model에 target 지정 시 panning 불가
         innerCamera.setTarget(Vector3.Zero());
-        innerCamera.attachControl(renderingCanvas, false, true);
+        innerCamera.attachControl(renderingCanvas.current, false, true);
         innerCamera.allowUpsideDown = false;
 
         innerCamera.inertia = 0.5;
@@ -58,19 +58,20 @@ const useBabylon = (currentFile, renderingCanvas) => {
 
   // 초기 세팅
   useEffect(() => {
-    if (renderingCanvas) {
+    if (renderingCanvas.current) {
       // create engine
-      const engine = new Engine(renderingCanvas, true);
+      const engine = new Engine(renderingCanvas.current, true);
 
       // create scene
       const innerScene = new Scene(engine);
-      setScene(innerScene);
 
       if (innerScene.isReady()) {
         handleSceneReady(innerScene);
+        setScene(innerScene);
       } else {
         innerScene.onReadyObservable.addOnce((innerScene) => {
           handleSceneReady(innerScene);
+          setScene(innerScene);
         });
       }
 
@@ -98,9 +99,6 @@ const useBabylon = (currentFile, renderingCanvas) => {
         glbFileUrl,
         scene,
         (meshes, _, skeletons, animationGroups, transformNodes) => {
-          // if (camera) {
-          //   camera.setTarget(Vector3.Zero());
-          // }
           console.log(meshes);
           console.log(skeletons);
           console.log(animationGroups);
@@ -127,9 +125,6 @@ const useBabylon = (currentFile, renderingCanvas) => {
             currentFile,
             scene,
             (meshes, _, skeletons, animationGroups, transformNodes) => {
-              // if (camera) {
-              //   camera.setTarget(Vector3.Zero());
-              // }
               console.log(meshes);
               console.log(skeletons);
               console.log(animationGroups);
@@ -145,6 +140,8 @@ const useBabylon = (currentFile, renderingCanvas) => {
 
     // return () => {};
   }, [camera, currentFile, scene]);
+
+  return { scene };
 };
 
 export default useBabylon;
