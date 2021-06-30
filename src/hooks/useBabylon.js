@@ -33,10 +33,11 @@ const useBabylon = (currentFile, renderingCanvas) => {
         innerCamera.setTarget(Vector3.Zero());
         innerCamera.attachControl(renderingCanvas.current, false, true);
         innerCamera.allowUpsideDown = false;
+        innerCamera.minZ = 0.1;
 
         innerCamera.inertia = 0.5;
         innerCamera.wheelPrecision = 50;
-        innerCamera.lowerRadiusLimit = 2;
+        innerCamera.lowerRadiusLimit = 0.1;
         innerCamera.upperRadiusLimit = 20;
 
         innerCamera.panningAxis = new Vector3(1, 1, 0);
