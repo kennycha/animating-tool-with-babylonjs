@@ -1,4 +1,5 @@
-import { useRef, useState } from "react";
+import { GLTF2Export } from "babylonjs-serializers";
+import { useCallback, useRef, useState } from "react";
 import "./App.css";
 import { useBabylon } from "./hooks";
 
@@ -10,7 +11,25 @@ function App() {
     setCurrentFile(event.target.files[0]);
   };
 
-  useBabylon(currentFile, renderingCanvas.current);
+  const { scene } = useBabylon(currentFile, renderingCanvas);
+
+  const handleGlbExport = useCallback(() => {
+    if (scene && scene.isReady()) {
+      GLTF2Export.GLBAsync(scene, "test").then((glb) => {
+        console.log("glb: ", glb);
+        glb.downloadFiles();
+      });
+    }
+  }, [scene]);
+
+  const handleGltfExport = useCallback(() => {
+    if (scene && scene.isReady()) {
+      GLTF2Export.GLTFAsync(scene, "test").then((gltf) => {
+        console.log("gltf: ", gltf);
+        gltf.downloadFiles();
+      });
+    }
+  }, [scene]);
 
   return (
     <div className="app-container">
@@ -37,6 +56,14 @@ function App() {
         onChange={handleInputChange}
       />
       <canvas id="renderingCanvas" ref={renderingCanvas} />
+      <div className="button-container">
+        <button className="export-button" onClick={handleGlbExport}>
+          export as glb
+        </button>
+        <button className="export-button" onClick={handleGltfExport}>
+          export as gltf
+        </button>
+      </div>
     </div>
   );
 }
