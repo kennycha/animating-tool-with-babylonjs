@@ -118,7 +118,11 @@ const useBabylon = (currentFile, renderingCanvas) => {
       }
 
       if (fileExtension) {
-        if (fileExtension === "glb" || fileExtension === "gltf") {
+        if (
+          fileExtension === "glb" ||
+          fileExtension === "gltf" ||
+          fileExtension === "babylon"
+        ) {
           // glb, gltf 파일 import
           SceneLoader.ImportMesh(
             "",

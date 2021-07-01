@@ -31,6 +31,24 @@ function App() {
     }
   }, [scene]);
 
+  const handleLogScene = useCallback(() => {
+    if (scene && scene.isReady()) {
+      console.log("scene: ", scene);
+    }
+  }, [scene]);
+
+  const handleLogAnimationGroups = useCallback(() => {
+    if (scene && scene.isReady()) {
+      console.log("scene.animationGroups: ", scene.animationGroups);
+    }
+  }, [scene]);
+
+  const handleToggleWireframeMode = useCallback(() => {
+    if (scene && scene.isReady()) {
+      scene.forceWireframe = !scene.forceWireframe;
+    }
+  }, [scene]);
+
   return (
     <div className="app-container">
       <section>
@@ -52,16 +70,25 @@ function App() {
       </section>
       <input
         type="file"
-        accept=".glb, .gltf, .fbx"
+        accept=".glb, .gltf, .fbx, .babylon"
         onChange={handleInputChange}
       />
       <canvas id="renderingCanvas" ref={renderingCanvas} />
       <div className="button-container">
-        <button className="export-button" onClick={handleGlbExport}>
+        <button className="default-button" onClick={handleGlbExport}>
           export as glb
         </button>
-        <button className="export-button" onClick={handleGltfExport}>
+        <button className="default-button" onClick={handleGltfExport}>
           export as gltf
+        </button>
+        <button className="default-button" onClick={handleLogScene}>
+          log scene
+        </button>
+        <button className="default-button" onClick={handleLogAnimationGroups}>
+          log animationGroups
+        </button>
+        <button className="default-button" onClick={handleToggleWireframeMode}>
+          toggle wireframe
         </button>
       </div>
     </div>
