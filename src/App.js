@@ -1,4 +1,4 @@
-import { GLTF2Export } from "babylonjs-serializers";
+import { GLTF2Export } from "@babylonjs/serializers";
 import { useCallback, useRef, useState } from "react";
 import "./App.css";
 import { useBabylon } from "./hooks";

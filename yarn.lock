@@ -1208,6 +1208,15 @@
     "babylonjs-gltf2interface" "4.2.0"
     "tslib" ">=1.10.0"
 
+"@babylonjs/serializers@^4.2.0":
+  "integrity" "sha512-VY5SONQaBSMusgNIwNz2k9L+YJK6oeJWLlQUdWvjszXp6/WVELh072S2gpMN0WX7mVonbCdcqXhJrKZgMV6t+g=="
+  "resolved" "https://registry.npmjs.org/@babylonjs/serializers/-/serializers-4.2.0.tgz"
+  "version" "4.2.0"
+  dependencies:
+    "@babylonjs/core" "4.2.0"
+    "babylonjs-gltf2interface" "4.2.0"
+    "tslib" ">=1.10.0"
+
 "@bcoe/v8-coverage@^0.2.3":
   "integrity" "sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw=="
   "resolved" "https://registry.yarnpkg.com/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz"
@@ -2772,19 +2781,6 @@
 "babylonjs-gltf2interface@4.2.0":
   "integrity" "sha512-Fn/ThxwZWP9kEAqk+9FX9CAeF4ah/I0/8wzAZR8MQuYqlYpEfM+E/IztJ+4LoOOxQYMWNs5lgj8OXSkX0tqc4g=="
   "resolved" "https://registry.npmjs.org/babylonjs-gltf2interface/-/babylonjs-gltf2interface-4.2.0.tgz"
-  "version" "4.2.0"
-
-"babylonjs-serializers@^4.2.0":
-  "integrity" "sha512-N5fmuZXBQaZZB9C9iyuu4SnnTvteAWt1iPyxW2aF8OUAaZ1uhyB6/cTsFS5/8ziXQ1GpR/gfKtk9QqB97Dn4ew=="
-  "resolved" "https://registry.npmjs.org/babylonjs-serializers/-/babylonjs-serializers-4.2.0.tgz"
-  "version" "4.2.0"
-  dependencies:
-    "babylonjs" "4.2.0"
-    "babylonjs-gltf2interface" "4.2.0"
-
-"babylonjs@4.2.0":
-  "integrity" "sha512-4hniJzWRkV0tDTTYGEHPk1lnfWn0HIw7HOvNWPK0rpUIbJooyeD9E5uVyHnslDedt0mtrA7QZu4i2Cz1DEmSsA=="
-  "resolved" "https://registry.npmjs.org/babylonjs/-/babylonjs-4.2.0.tgz"
   "version" "4.2.0"
 
 "balanced-match@^1.0.0":
