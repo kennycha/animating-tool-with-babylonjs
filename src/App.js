@@ -1,4 +1,5 @@
 import { GLTF2Export } from "@babylonjs/serializers";
+import axios from "axios";
 import { useCallback, useRef, useState } from "react";
 import "./App.css";
 import { useBabylon } from "./hooks";
@@ -16,17 +17,36 @@ function App() {
   const handleGlbExport = useCallback(() => {
     if (scene && scene.isReady()) {
       GLTF2Export.GLBAsync(scene, "test").then((glb) => {
-        console.log("glb: ", glb);
         glb.downloadFiles();
       });
     }
   }, [scene]);
 
-  const handleGltfExport = useCallback(() => {
+  const handleFbxExport = useCallback(() => {
     if (scene && scene.isReady()) {
-      GLTF2Export.GLTFAsync(scene, "test").then((gltf) => {
-        console.log("gltf: ", gltf);
-        gltf.downloadFiles();
+      const fileName = "test";
+      GLTF2Export.GLBAsync(scene, fileName).then(async (glb) => {
+        const blob = glb.glTFFiles[`${fileName}.glb`];
+        const file = new File([blob], `${fileName}.glb`);
+
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("type", "glb");
+        formData.append("id", String(Date.now() / 1000));
+
+        axios({
+          method: "POST",
+          url: "https://blenderapi.myplask.com:5000/glb2fbx-upload-api",
+          data: formData,
+          headers: { "Content-Type": "multipart/form-data" },
+        })
+          .then((res) => {
+            const a = document.createElement("a");
+            a.download = `${fileName}.fbx`;
+            a.href = res.data.result;
+            a.click();
+          })
+          .catch((err) => alert(err));
       });
     }
   }, [scene]);
@@ -78,8 +98,8 @@ function App() {
         <button className="default-button" onClick={handleGlbExport}>
           export as glb
         </button>
-        <button className="default-button" onClick={handleGltfExport}>
-          export as gltf
+        <button className="default-button" onClick={handleFbxExport}>
+          export as fbx
         </button>
         <button className="default-button" onClick={handleLogScene}>
           log scene
