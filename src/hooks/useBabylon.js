@@ -1,4 +1,5 @@
 import * as BABYLON from "@babylonjs/core";
+import { SkeletonViewer } from "@babylonjs/core/Debug";
 import "@babylonjs/loaders/glTF";
 import { useCallback, useEffect, useState } from "react";
 import { convertFbxToGlb, getFileExtension } from "../utils";
@@ -6,6 +7,28 @@ import { convertFbxToGlb, getFileExtension } from "../utils";
 const useBabylon = (currentFile, renderingCanvas) => {
   const [scene, setScene] = useState();
   const [camera, setCamera] = useState();
+
+  const [gizmoManager, setGizmoManager] = useState();
+  const [gizmoAttachableMeshes, setGizmoAttachableMeshes] = useState([]);
+
+  const getBoneIndex = (pickResult) => {
+    console.log("pickResult: ", pickResult);
+
+    const indices = pickResult.pickedMesh.getIndices();
+    console.log("indices: ", indices);
+
+    const vertexId = indices[pickResult.faceId * 3];
+    console.log("vertexId: ", vertexId);
+
+    const matricesIndices = pickResult.pickedMesh.getVerticesData(
+      BABYLON.VertexBuffer.MatricesIndicesKind
+    );
+    console.log("matricesIndices: ", matricesIndices);
+
+    const boneIndex = matricesIndices[vertexId * 4];
+
+    return boneIndex;
+  };
 
   // scene이 준비되면 호출할 함수
   const handleSceneReady = useCallback(
@@ -30,6 +53,7 @@ const useBabylon = (currentFile, renderingCanvas) => {
 
         innerCamera.inertia = 0.5;
         innerCamera.wheelPrecision = 50;
+        innerCamera.wheelDeltaPercentage = 0.01;
         innerCamera.lowerRadiusLimit = 0.1;
         innerCamera.upperRadiusLimit = 20;
 
@@ -47,8 +71,38 @@ const useBabylon = (currentFile, renderingCanvas) => {
         light.intensity = 0.7;
 
         // data load observable
-        scene.onDataLoadedObservable.add((scene) => {
+        scene.onDataLoadedObservable.add((scene, eventState) => {
           console.log("data loaded!");
+        });
+
+        // pointer observable에 pick event callback 추가
+        scene.onPointerObservable.add((pointerInfo, eventState) => {
+          const { pickInfo } = pointerInfo;
+          if (pickInfo.hit) {
+            // pickInfo.pickedMesh.refreshBoundingInfo(true);
+            const boneIndex = getBoneIndex(pickInfo);
+            const pickedBone = pickInfo.pickedMesh.skeleton.bones.filter(
+              (bone) => bone.name !== "Scene" && bone.name !== "Armature"
+            )[boneIndex];
+
+            console.log("boneIndex: ", boneIndex);
+            console.log("pickedBone: ", pickedBone);
+            console.log("pickedBone.name: ", pickedBone.name);
+          }
+        }, BABYLON.PointerEventTypes.POINTERPICK);
+
+        // gizmo manager 생성 및 observable 설정
+        const innerGizmoManager = new BABYLON.GizmoManager(scene);
+        setGizmoManager(innerGizmoManager);
+
+        innerGizmoManager.onAttachedToMeshObservable.add((...params) => {
+          console.log("attached");
+          console.log("params: ", params);
+        });
+
+        innerGizmoManager.onAttachedToNodeObservable.add((...params) => {
+          console.log("attached");
+          console.log("params: ", params);
         });
       }
     },
@@ -84,7 +138,7 @@ const useBabylon = (currentFile, renderingCanvas) => {
     }
   }, [handleSceneReady, renderingCanvas]);
 
-  const addAssetsToCurrentScene = (assetContainer, scene) => {
+  const addAssetsToCurrentScene = useCallback((assetContainer, scene) => {
     const {
       animationGroups,
       geometries,
@@ -119,6 +173,7 @@ const useBabylon = (currentFile, renderingCanvas) => {
     // mesh
     if (meshes.length !== 0) {
       meshes.forEach((mesh) => {
+        // mesh.isPickable = false;
         scene.addMesh(mesh);
       });
     }
@@ -135,6 +190,48 @@ const useBabylon = (currentFile, renderingCanvas) => {
       skeletons.forEach((skeleton) => {
         scene.addSkeleton(skeleton);
       });
+
+      const SKELETON_VIEWER_OPTION = {
+        pauseAnimations: false,
+        returnToRest: false,
+        computeBonesUsingShaders: true,
+        useAllBones: true,
+        displayMode: SkeletonViewer.DISPLAY_SPHERE_AND_SPURS,
+        displayOptions: {
+          sphereBaseSize: 1,
+          sphereScaleUnit: 10,
+          sphereFactor: 0.9,
+          midStep: 0.25,
+          midStepFactor: 0.05,
+        },
+      };
+
+      // skeleton viewer
+      const skeletonView = new SkeletonViewer(
+        skeletons[0],
+        meshes[0],
+        scene,
+        true, //autoUpdateBoneMatrices?
+        meshes[0].renderingGroupId > 0 ? meshes[0].renderingGroupId + 1 : 1, // renderingGroup
+        SKELETON_VIEWER_OPTION
+      );
+      // babylon bug로 인해 초기 isEnabled를 true로 설정
+      skeletonView.isEnabled = true;
+
+      // console.log(skeletonView);
+
+      // setTimeout(() => {
+      //   // sphere 및 spurs 지우기
+      //   skeletonView.isEnabled = false;
+
+      //   // skeleton 모드 변경
+      //   skeletonView.changeDisplayMode(SkeletonViewer.DISPLAY_SPHERES);
+      //   skeletonView.changeDisplayMode(SkeletonViewer.DISPLAY_LINES);
+      //   skeletonView.changeDisplayMode(SkeletonViewer.DISPLAY_SPHERE_AND_SPURS)
+
+      //   // joint 크기 조절
+      //   skeletonView.changeDisplayOptions("sphereBaseSize", 0.5);
+      // }, 2000);
     }
 
     // transformNodes
@@ -143,7 +240,37 @@ const useBabylon = (currentFile, renderingCanvas) => {
         scene.addTransformNode(transformNode);
       });
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (gizmoManager) {
+      console.log("gizmoManager: ", gizmoManager);
+      console.log("gizmoAttachableMeshes: ", gizmoAttachableMeshes);
+      gizmoManager.attachableMeshes = gizmoAttachableMeshes;
+    }
+  }, [gizmoAttachableMeshes, gizmoManager]);
+
+  useEffect(() => {
+    if (gizmoManager) {
+      const handleKeyDown = (event) => {
+        if (event.key === "w") {
+          gizmoManager.positionGizmoEnabled = !gizmoManager.positionGizmoEnabled;
+        }
+        if (event.key === "e") {
+          gizmoManager.rotationGizmoEnabled = !gizmoManager.rotationGizmoEnabled;
+        }
+        if (event.key === "r") {
+          gizmoManager.scaleGizmoEnabled = !gizmoManager.scaleGizmoEnabled;
+        }
+      };
+
+      document.addEventListener("keydown", handleKeyDown);
+
+      return () => {
+        document.removeEventListener("keydown", handleKeyDown);
+      };
+    }
+  });
 
   // input file 변화 시 호출
   useEffect(() => {
@@ -158,27 +285,24 @@ const useBabylon = (currentFile, renderingCanvas) => {
         "",
         scene
       );
-      console.log("loadedAssetContainer: ", loadedAssetContainer);
       addAssetsToCurrentScene(loadedAssetContainer, scene);
     };
 
-    const loadGlbOrGltfFile = async (file, scene) => {
+    const loadGlbFile = async (file, scene) => {
       const loadedAssetContainer = await BABYLON.SceneLoader.LoadAssetContainerAsync(
         "file:",
-        currentFile,
+        file,
         scene
       );
-      console.log("loadedAssetContainer: ", loadedAssetContainer);
       addAssetsToCurrentScene(loadedAssetContainer, scene);
     };
 
     const loadBabylonFile = async (file, scene) => {
       const loadedAssetContainer = await BABYLON.SceneLoader.LoadAssetContainerAsync(
         "file:",
-        currentFile,
+        file,
         scene
       );
-      console.log("loadedAssetContainer: ", loadedAssetContainer);
       addAssetsToCurrentScene(loadedAssetContainer, scene);
     };
 
@@ -194,7 +318,7 @@ const useBabylon = (currentFile, renderingCanvas) => {
       if (fileExtension) {
         if (fileExtension === "glb" || fileExtension === "gltf") {
           // glb, gltf 파일 import
-          loadGlbOrGltfFile(currentFile, scene);
+          loadGlbFile(currentFile, scene);
         } else if (fileExtension === "babylon") {
           // babylon 파일 import
           loadBabylonFile(currentFile, scene);
@@ -206,6 +330,7 @@ const useBabylon = (currentFile, renderingCanvas) => {
     }
 
     // return () => {};
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [camera, currentFile, scene]);
 
   return { scene };
