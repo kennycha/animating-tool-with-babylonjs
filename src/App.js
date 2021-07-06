@@ -57,6 +57,12 @@ function App() {
     }
   }, [scene]);
 
+  const stopAllAnimations = useCallback(() => {
+    if (scene && scene.isReady()) {
+      scene.stopAllAnimations();
+    }
+  }, [scene]);
+
   const handleLogAnimationGroups = useCallback(() => {
     if (scene && scene.isReady()) {
       console.log("scene.animationGroups: ", scene.animationGroups);
@@ -103,6 +109,9 @@ function App() {
         </button>
         <button className="default-button" onClick={handleLogScene}>
           log scene
+        </button>
+        <button className="default-button" onClick={stopAllAnimations}>
+          stop all animations
         </button>
         <button className="default-button" onClick={handleLogAnimationGroups}>
           log animationGroups
