@@ -7,7 +7,7 @@ import { convertFbxToGlb, getFileExtension } from "../utils";
 const useBabylon = (currentFile, renderingCanvas) => {
   const [scene, setScene] = useState();
   const [camera, setCamera] = useState();
-  const [hasController, setHasController] = useState(true);
+  const [hasController, setHasController] = useState(false);
 
   const [gizmoManager, setGizmoManager] = useState();
   const [gizmoAttachableMeshes, setGizmoAttachableMeshes] = useState([]);
@@ -61,7 +61,43 @@ const useBabylon = (currentFile, renderingCanvas) => {
         scene.onPointerObservable.add((pointerInfo, eventState) => {
           const { pickInfo } = pointerInfo;
           if (pickInfo.hit) {
-            console.log("picked mesh: ", pickInfo.pickedMesh);
+            pickInfo.pickedMesh.refreshBoundingInfo(true);
+            const indices = pickInfo.pickedMesh.getIndices();
+            const matricesIndices = pickInfo.pickedMesh.getVerticesData(
+              BABYLON.VertexBuffer.MatricesIndicesKind
+            );
+            const vertexId = indices[pickInfo.faceId * 3];
+            const sceneAndArmatureRemovedBones = pickInfo.pickedMesh.skeleton.bones.filter(
+              (bone) => bone.name !== "Scene" && bone.name !== "Armature"
+            );
+            const candidateBoneIndices = [
+              matricesIndices[vertexId * 4],
+              matricesIndices[vertexId * 4 + 1],
+              matricesIndices[vertexId * 4 + 2],
+              matricesIndices[vertexId * 4 + 3],
+            ];
+            let minDistance = Infinity;
+            let selectedBone;
+            let selectedBoneIndex;
+            candidateBoneIndices.forEach((boneIndex, idx) => {
+              const distance = BABYLON.Vector3.Distance(
+                pickInfo.pickedPoint,
+                sceneAndArmatureRemovedBones[boneIndex].getAbsolutePosition()
+              );
+              if (distance < minDistance) {
+                minDistance = distance;
+                selectedBone = sceneAndArmatureRemovedBones[boneIndex];
+                selectedBoneIndex = boneIndex;
+              }
+            });
+
+            console.log("candidateBoneIndices: ", candidateBoneIndices);
+            console.log(
+              "candidateBones: ",
+              candidateBoneIndices.map((i) => sceneAndArmatureRemovedBones[i])
+            );
+
+            console.log("selectedBone.name: ", selectedBone.name);
           }
         }, BABYLON.PointerEventTypes.POINTERPICK);
 
@@ -69,15 +105,9 @@ const useBabylon = (currentFile, renderingCanvas) => {
         const innerGizmoManager = new BABYLON.GizmoManager(scene);
         setGizmoManager(innerGizmoManager);
 
-        innerGizmoManager.onAttachedToMeshObservable.add((...params) => {
-          console.log("attached");
-          console.log("params: ", params);
-        });
+        innerGizmoManager.onAttachedToMeshObservable.add((...params) => {});
 
-        innerGizmoManager.onAttachedToNodeObservable.add((...params) => {
-          console.log("attached");
-          console.log("params: ", params);
-        });
+        innerGizmoManager.onAttachedToNodeObservable.add((...params) => {});
       }
     },
     [renderingCanvas]
@@ -148,7 +178,7 @@ const useBabylon = (currentFile, renderingCanvas) => {
       // mesh
       if (meshes.length !== 0) {
         meshes.forEach((mesh) => {
-          mesh.isPickable = false;
+          mesh.isPickable = true;
           scene.addMesh(mesh);
         });
       }
@@ -184,28 +214,23 @@ const useBabylon = (currentFile, renderingCanvas) => {
         if (hasController) {
           const toruses = [];
           // 자동 controller 부착
-          skeletons[0].bones
-            .filter((bone) => bone.name !== "Scene")
-            .forEach((bone) => {
-              const torus = BABYLON.MeshBuilder.CreateTorus("controller", {
-                diameter: bone.name === "Armature" ? 2 : 0.2,
-                thickness: 0.005,
-                tessellation: bone.name === "Armature" ? 64 : 32,
-                sideOrientation: BABYLON.Mesh.DOUBLESIDE,
-              });
-              torus.renderOverlay = true;
-              torus.overlayColor = BABYLON.Color3.Red();
-              torus.renderingGroupId = 3;
-
-              torus.position = bone.getAbsolutePosition();
-              torus.setParent(bone);
-
-              torus.onAfterWorldMatrixUpdateObservable.addOnce(
-                (mesh, eventState) => {}
-              );
-
-              toruses.push(torus);
+          skeletons[0].bones.forEach((bone) => {
+            const torus = BABYLON.MeshBuilder.CreateTorus("controller", {
+              diameter: bone.name === "Armature" ? 2 : 0.2,
+              thickness: 0.005,
+              tessellation: bone.name === "Armature" ? 64 : 32,
+              sideOrientation: BABYLON.Mesh.DOUBLESIDE,
             });
+            torus.renderOverlay = true;
+            torus.overlayColor = BABYLON.Color3.Red();
+            torus.renderingGroupId = 3;
+
+            torus.position = bone.getAbsolutePosition();
+            torus.setParent(bone);
+            torus.attachToBone(bone);
+
+            toruses.push(torus);
+          });
 
           setGizmoAttachableMeshes(
             // skeletons[0].bones.filter((bone) => bone.name !== "Scene")
@@ -251,8 +276,8 @@ const useBabylon = (currentFile, renderingCanvas) => {
 
   useEffect(() => {
     if (gizmoManager) {
-      console.log("gizmoManager: ", gizmoManager);
-      console.log("gizmoAttachableMeshes: ", gizmoAttachableMeshes);
+      // console.log("gizmoManager: ", gizmoManager);
+      // console.log("gizmoAttachableMeshes: ", gizmoAttachableMeshes);
       gizmoManager.attachableMeshes = gizmoAttachableMeshes;
     }
   }, [gizmoAttachableMeshes, gizmoManager]);
