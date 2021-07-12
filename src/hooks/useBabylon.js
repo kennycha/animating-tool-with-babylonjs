@@ -1,8 +1,8 @@
 import * as BABYLON from "@babylonjs/core";
-import { SkeletonViewer } from "@babylonjs/core/Debug";
+// import { SkeletonViewer } from "@babylonjs/core/Debug";
 import "@babylonjs/loaders/glTF";
 import { useCallback, useEffect, useState } from "react";
-import { convertFbxToGlb, getFileExtension } from "../utils";
+import { convertFbxToGlb, getFileExtension, SkeletonWidget } from "../utils";
 
 const useBabylon = (currentFile, renderingCanvas) => {
   const [scene, setScene] = useState();
@@ -54,57 +54,58 @@ const useBabylon = (currentFile, renderingCanvas) => {
 
         // data load observable
         scene.onDataLoadedObservable.add((scene, eventState) => {
-          console.log("data loaded!");
+          // console.log("data loaded!");
         });
 
         // pointer observable에 pick event callback 추가
-        scene.onPointerObservable.add((pointerInfo, eventState) => {
-          const { pickInfo } = pointerInfo;
-          if (pickInfo.hit) {
-            pickInfo.pickedMesh.refreshBoundingInfo(true);
-            const indices = pickInfo.pickedMesh.getIndices();
-            const matricesIndices = pickInfo.pickedMesh.getVerticesData(
-              BABYLON.VertexBuffer.MatricesIndicesKind
-            );
-            const vertexId = indices[pickInfo.faceId * 3];
-            const sceneAndArmatureRemovedBones = pickInfo.pickedMesh.skeleton.bones.filter(
-              (bone) => bone.name !== "Scene" && bone.name !== "Armature"
-            );
-            const candidateBoneIndices = [
-              matricesIndices[vertexId * 4],
-              matricesIndices[vertexId * 4 + 1],
-              matricesIndices[vertexId * 4 + 2],
-              matricesIndices[vertexId * 4 + 3],
-            ];
-            let minDistance = Infinity;
-            let selectedBone;
-            let selectedBoneIndex;
-            candidateBoneIndices.forEach((boneIndex, idx) => {
-              const distance = BABYLON.Vector3.Distance(
-                pickInfo.pickedPoint,
-                sceneAndArmatureRemovedBones[boneIndex].getAbsolutePosition()
-              );
-              if (distance < minDistance) {
-                minDistance = distance;
-                selectedBone = sceneAndArmatureRemovedBones[boneIndex];
-                selectedBoneIndex = boneIndex;
-              }
-            });
+        // scene.onPointerObservable.add((pointerInfo, eventState) => {
+        //   const { pickInfo } = pointerInfo;
+        //   if (pickInfo.hit) {
+        //     pickInfo.pickedMesh.refreshBoundingInfo(true);
+        //     const indices = pickInfo.pickedMesh.getIndices();
+        //     const matricesIndices = pickInfo.pickedMesh.getVerticesData(
+        //       BABYLON.VertexBuffer.MatricesIndicesKind
+        //     );
+        //     const vertexId = indices[pickInfo.faceId * 3];
+        //     const sceneAndArmatureRemovedBones = pickInfo.pickedMesh.skeleton.bones.filter(
+        //       (bone) => bone.name !== "Scene" && bone.name !== "Armature"
+        //     );
+        //     const candidateBoneIndices = [
+        //       matricesIndices[vertexId * 4],
+        //       matricesIndices[vertexId * 4 + 1],
+        //       matricesIndices[vertexId * 4 + 2],
+        //       matricesIndices[vertexId * 4 + 3],
+        //     ];
+        //     let minDistance = Infinity;
+        //     let selectedBone;
+        //     let selectedBoneIndex;
+        //     candidateBoneIndices.forEach((boneIndex, idx) => {
+        //       const distance = BABYLON.Vector3.Distance(
+        //         pickInfo.pickedPoint,
+        //         sceneAndArmatureRemovedBones[boneIndex].getAbsolutePosition()
+        //       );
+        //       if (distance < minDistance) {
+        //         minDistance = distance;
+        //         selectedBone = sceneAndArmatureRemovedBones[boneIndex];
+        //         selectedBoneIndex = boneIndex;
+        //       }
+        //     });
 
-            console.log("candidateBoneIndices: ", candidateBoneIndices);
-            console.log(
-              "candidateBones: ",
-              candidateBoneIndices.map((i) => sceneAndArmatureRemovedBones[i])
-            );
+        //     console.log("candidateBoneIndices: ", candidateBoneIndices);
+        //     console.log(
+        //       "candidateBones: ",
+        //       candidateBoneIndices.map((i) => sceneAndArmatureRemovedBones[i])
+        //     );
 
-            console.log("selectedBone.name: ", selectedBone.name);
-          }
-        }, BABYLON.PointerEventTypes.POINTERPICK);
+        //     console.log("selectedBone.name: ", selectedBone.name);
+        //   }
+        // }, BABYLON.PointerEventTypes.POINTERPICK);
 
         // gizmo manager 생성 및 observable 설정
         const innerGizmoManager = new BABYLON.GizmoManager(scene);
         setGizmoManager(innerGizmoManager);
 
+        // gizmo attach observable
         innerGizmoManager.onAttachedToMeshObservable.add((...params) => {});
 
         innerGizmoManager.onAttachedToNodeObservable.add((...params) => {});
@@ -119,6 +120,9 @@ const useBabylon = (currentFile, renderingCanvas) => {
       // create engine
       const engine = new BABYLON.Engine(renderingCanvas.current, true);
 
+      // use matrices interpolation for animations
+      BABYLON.Animation.AllowMatricesInterpolation = true;
+
       // create scene
       const innerScene = new BABYLON.Scene(engine);
 
@@ -131,6 +135,11 @@ const useBabylon = (currentFile, renderingCanvas) => {
           setScene(innerScene);
         });
       }
+
+      // 개발환경에서의 에러발생 방지
+      innerScene.onDisposeObservable.addOnce(() => {
+        window.location.reload();
+      });
 
       engine.runRenderLoop(() => {
         innerScene.render();
@@ -178,7 +187,7 @@ const useBabylon = (currentFile, renderingCanvas) => {
       // mesh
       if (meshes.length !== 0) {
         meshes.forEach((mesh) => {
-          mesh.isPickable = true;
+          mesh.isPickable = false;
           scene.addMesh(mesh);
         });
       }
@@ -195,21 +204,6 @@ const useBabylon = (currentFile, renderingCanvas) => {
         skeletons.forEach((skeleton) => {
           scene.addSkeleton(skeleton);
         });
-
-        const SKELETON_VIEWER_OPTION = {
-          pauseAnimations: false,
-          returnToRest: false,
-          computeBonesUsingShaders: true,
-          useAllBones: true,
-          displayMode: SkeletonViewer.DISPLAY_SPHERE_AND_SPURS,
-          displayOptions: {
-            sphereBaseSize: 1,
-            sphereScaleUnit: 15,
-            sphereFactor: 0.9,
-            midStep: 0.25,
-            midStepFactor: 0.05,
-          },
-        };
 
         if (hasController) {
           const toruses = [];
@@ -238,18 +232,46 @@ const useBabylon = (currentFile, renderingCanvas) => {
           );
         }
 
-        // skeleton viewer
-        const skeletonView = new SkeletonViewer(
-          skeletons[0],
+        const skeletonWidget = new SkeletonWidget(
           meshes[0],
           scene,
-          true, //autoUpdateBoneMatrices?
-          meshes[0].renderingGroupId > 0 ? meshes[0].renderingGroupId + 1 : 1, // renderingGroup
-          SKELETON_VIEWER_OPTION
+          skeletons[0],
+          {
+            spherePointBaseSize: 0.035,
+            spherePointMinSize: 0.01,
+            boneMeshHalfwayRatio: 0.1,
+            boneMeshHalfwayScale: 0.05,
+          }
         );
-        // babylon bug로 인해 초기 isEnabled를 true로 설정
-        skeletonView.isEnabled = true;
+        skeletonWidget.build(true);
 
+        // const SKELETON_VIEWER_OPTION = {
+        //   pauseAnimations: false,
+        //   returnToRest: false,
+        //   computeBonesUsingShaders: true,
+        //   useAllBones: true,
+        //   displayMode: SkeletonViewer.DISPLAY_SPHERE_AND_SPURS,
+        //   displayOptions: {
+        //     sphereBaseSize: 1,
+        //     sphereScaleUnit: 15,
+        //     sphereFactor: 0.9,
+        //     midStep: 0.25,
+        //     midStepFactor: 0.05,
+        //   },
+        // };
+
+        // // skeleton viewer
+        // const skeletonView = new SkeletonViewer(
+        //   skeletons[0],
+        //   meshes[0],
+        //   scene,
+        //   true, //autoUpdateBoneMatrices?
+        //   meshes[0].renderingGroupId > 0 ? meshes[0].renderingGroupId + 1 : 1, // renderingGroup
+        //   SKELETON_VIEWER_OPTION
+        // );
+        // // babylon bug로 인해 초기 isEnabled를 true로 설정
+        // skeletonView.isEnabled = true;
+        //
         // setTimeout(() => {
         //   // sphere 및 spurs 지우기
         //   skeletonView.isEnabled = false;

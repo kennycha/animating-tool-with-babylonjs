@@ -14,7 +14,6 @@ const convertFbxToGlb = async (fbxFile) => {
     url: "/fbx2glb-upload-api",
     data: formData,
     headers: { "Content-Type": "multipart/form-data" },
-    timeout: 10000,
   })
     .then((result) => result.data.result)
     .catch((error) => {
