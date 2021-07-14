@@ -202,6 +202,26 @@ const useBabylon = (currentFile, renderingCanvas) => {
             sphere.attachToBone(bone, meshes[0]);
             spheres.push(sphere);
             scene.addMesh(sphere);
+            // hover cursor 설정
+            sphere.actionManager = new BABYLON.ActionManager(scene);
+            sphere.actionManager.registerAction(
+              new BABYLON.ExecuteCodeAction(
+                BABYLON.ActionManager.OnPointerOverTrigger,
+                (event) => {
+                  // const { source, meshUnderPointer } = event;
+                  scene.hoverCursor = "pointer";
+                }
+              )
+            );
+            sphere.actionManager.registerAction(
+              new BABYLON.ExecuteCodeAction(
+                BABYLON.ActionManager.OnPointerOutTrigger,
+                (event) => {
+                  // const { source, meshUnderPointer } = event;
+                  scene.hoverCursor = "default";
+                }
+              )
+            );
           }
         });
 
