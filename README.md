@@ -1,4 +1,4 @@
-# Sample App with Babylon
+# Animating Tool with Babylonjs
 
 ## Description
 
@@ -20,3 +20,5 @@ It will take seconds for loading .fbx file. (Because of the api communication)
 - Change the type of the gizmo by pressing 'w', 'e', 'r' keys (default position gizmo).
 - Detach the gizmo by pressing the 'Escape' key.
 - Change the properties of target bone by dragging the gizmo.
+
+<video src="./public/assets/sample-video.mov"></video>
