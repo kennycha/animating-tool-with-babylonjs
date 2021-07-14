@@ -66,6 +66,7 @@ const useBabylon = (currentFile, renderingCanvas) => {
 
         // gizmo manager 생성 및 observable 설정
         const innerGizmoManager = new BABYLON.GizmoManager(scene);
+        innerGizmoManager.usePointerToAttachGizmos = false;
         setGizmoManager(innerGizmoManager);
 
         // gizmo attach observable
@@ -123,6 +124,8 @@ const useBabylon = (currentFile, renderingCanvas) => {
         skeletons,
         transformNodes,
       } = assetContainer;
+
+      console.log("assetContainer: ", assetContainer);
 
       // animation group
       if (animationGroups.length !== 0) {
@@ -217,11 +220,14 @@ const useBabylon = (currentFile, renderingCanvas) => {
             const bone = skeletons[0].bones.filter(
               (bone) => bone.name !== "Scene"
             )[pickInfo.pickedMesh.boneIdx];
-            if (currentBone) {
-              gizmoManager.positionGizmoEnabled = false;
-              gizmoManager.rotationGizmoEnabled = false;
-              gizmoManager.scaleGizmoEnabled = false;
-            }
+
+            gizmoManager.positionGizmoEnabled = false;
+            gizmoManager.rotationGizmoEnabled = false;
+            gizmoManager.scaleGizmoEnabled = false;
+
+            console.log("bone: ", bone);
+            console.log("transformNode: ", bone._linkedTransformNode);
+
             setCurrentBone(bone);
             gizmoManager.positionGizmoEnabled = true;
             gizmoManager.gizmos.positionGizmo.attachedNode =
@@ -237,7 +243,7 @@ const useBabylon = (currentFile, renderingCanvas) => {
         });
       }
     },
-    [currentBone, gizmoManager]
+    [gizmoManager]
   );
 
   useEffect(() => {
