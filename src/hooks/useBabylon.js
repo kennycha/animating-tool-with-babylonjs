@@ -1,16 +1,15 @@
 import * as BABYLON from "@babylonjs/core";
-// import { SkeletonViewer } from "@babylonjs/core/Debug";
+import { SkeletonViewer } from "@babylonjs/core/Debug";
 import "@babylonjs/loaders/glTF";
 import { useCallback, useEffect, useState } from "react";
-import { convertFbxToGlb, getFileExtension, SkeletonWidget } from "../utils";
+import { convertFbxToGlb, getFileExtension } from "../utils";
 
 const useBabylon = (currentFile, renderingCanvas) => {
   const [scene, setScene] = useState();
   const [camera, setCamera] = useState();
-  const [hasController, setHasController] = useState(false);
 
+  const [currentBone, setCurrentBone] = useState(null);
   const [gizmoManager, setGizmoManager] = useState();
-  const [gizmoAttachableMeshes, setGizmoAttachableMeshes] = useState([]);
 
   // scene이 준비되면 호출할 함수
   const handleSceneReady = useCallback(
@@ -44,7 +43,7 @@ const useBabylon = (currentFile, renderingCanvas) => {
         innerCamera.panningInertia = 0.5;
         innerCamera.panningDistanceLimit = 20;
 
-        // add light
+        // hemispheric light
         const light = new BABYLON.HemisphericLight(
           "light1",
           new BABYLON.Vector3(0, 1, 0),
@@ -58,56 +57,18 @@ const useBabylon = (currentFile, renderingCanvas) => {
         });
 
         // pointer observable에 pick event callback 추가
-        // scene.onPointerObservable.add((pointerInfo, eventState) => {
-        //   const { pickInfo } = pointerInfo;
-        //   if (pickInfo.hit) {
-        //     pickInfo.pickedMesh.refreshBoundingInfo(true);
-        //     const indices = pickInfo.pickedMesh.getIndices();
-        //     const matricesIndices = pickInfo.pickedMesh.getVerticesData(
-        //       BABYLON.VertexBuffer.MatricesIndicesKind
-        //     );
-        //     const vertexId = indices[pickInfo.faceId * 3];
-        //     const sceneAndArmatureRemovedBones = pickInfo.pickedMesh.skeleton.bones.filter(
-        //       (bone) => bone.name !== "Scene" && bone.name !== "Armature"
-        //     );
-        //     const candidateBoneIndices = [
-        //       matricesIndices[vertexId * 4],
-        //       matricesIndices[vertexId * 4 + 1],
-        //       matricesIndices[vertexId * 4 + 2],
-        //       matricesIndices[vertexId * 4 + 3],
-        //     ];
-        //     let minDistance = Infinity;
-        //     let selectedBone;
-        //     let selectedBoneIndex;
-        //     candidateBoneIndices.forEach((boneIndex, idx) => {
-        //       const distance = BABYLON.Vector3.Distance(
-        //         pickInfo.pickedPoint,
-        //         sceneAndArmatureRemovedBones[boneIndex].getAbsolutePosition()
-        //       );
-        //       if (distance < minDistance) {
-        //         minDistance = distance;
-        //         selectedBone = sceneAndArmatureRemovedBones[boneIndex];
-        //         selectedBoneIndex = boneIndex;
-        //       }
-        //     });
-
-        //     console.log("candidateBoneIndices: ", candidateBoneIndices);
-        //     console.log(
-        //       "candidateBones: ",
-        //       candidateBoneIndices.map((i) => sceneAndArmatureRemovedBones[i])
-        //     );
-
-        //     console.log("selectedBone.name: ", selectedBone.name);
-        //   }
-        // }, BABYLON.PointerEventTypes.POINTERPICK);
+        scene.onPointerObservable.add((pointerInfo, eventState) => {
+          const { pickInfo } = pointerInfo;
+          if (pickInfo.hit) {
+            console.log();
+          }
+        }, BABYLON.PointerEventTypes.POINTERPICK);
 
         // gizmo manager 생성 및 observable 설정
         const innerGizmoManager = new BABYLON.GizmoManager(scene);
         setGizmoManager(innerGizmoManager);
 
         // gizmo attach observable
-        innerGizmoManager.onAttachedToMeshObservable.add((...params) => {});
-
         innerGizmoManager.onAttachedToNodeObservable.add((...params) => {});
       }
     },
@@ -188,6 +149,7 @@ const useBabylon = (currentFile, renderingCanvas) => {
       if (meshes.length !== 0) {
         meshes.forEach((mesh) => {
           mesh.isPickable = false;
+          mesh.receiveShadows = false;
           scene.addMesh(mesh);
         });
       }
@@ -205,85 +167,67 @@ const useBabylon = (currentFile, renderingCanvas) => {
           scene.addSkeleton(skeleton);
         });
 
-        if (hasController) {
-          const toruses = [];
-          // 자동 controller 부착
-          skeletons[0].bones.forEach((bone) => {
-            const torus = BABYLON.MeshBuilder.CreateTorus("controller", {
-              diameter: bone.name === "Armature" ? 2 : 0.2,
-              thickness: 0.005,
-              tessellation: bone.name === "Armature" ? 64 : 32,
-              sideOrientation: BABYLON.Mesh.DOUBLESIDE,
-            });
-            torus.renderOverlay = true;
-            torus.overlayColor = BABYLON.Color3.Red();
-            torus.renderingGroupId = 3;
+        const SKELETON_VIEWER_OPTION = {
+          pauseAnimations: false,
+          returnToRest: false,
+          computeBonesUsingShaders: true,
+          useAllBones: true,
+          displayMode: SkeletonViewer.DISPLAY_SPHERE_AND_SPURS,
+          displayOptions: {
+            sphereBaseSize: 0.01,
+            sphereScaleUnit: 15,
+            sphereFactor: 0.9,
+            midStep: 0.25,
+            midStepFactor: 0.05,
+          },
+        };
 
-            torus.position = bone.getAbsolutePosition();
-            torus.setParent(bone);
-            torus.attachToBone(bone);
-
-            toruses.push(torus);
-          });
-
-          setGizmoAttachableMeshes(
-            // skeletons[0].bones.filter((bone) => bone.name !== "Scene")
-            toruses
-          );
-        }
-
-        const skeletonWidget = new SkeletonWidget(
+        // skeleton viewer
+        const skeletonView = new SkeletonViewer(
+          skeletons[0],
           meshes[0],
           scene,
-          skeletons[0],
-          {
-            spherePointBaseSize: 0.035,
-            spherePointMinSize: 0.01,
-            boneMeshHalfwayRatio: 0.1,
-            boneMeshHalfwayScale: 0.05,
-          }
+          true, //autoUpdateBoneMatrices?
+          meshes[0].renderingGroupId > 0 ? meshes[0].renderingGroupId + 1 : 1, // renderingGroup
+          SKELETON_VIEWER_OPTION
         );
-        skeletonWidget.build(true);
+        // babylon bug로 인해 초기 isEnabled를 true로 설정
+        skeletonView.isEnabled = true;
 
-        // const SKELETON_VIEWER_OPTION = {
-        //   pauseAnimations: false,
-        //   returnToRest: false,
-        //   computeBonesUsingShaders: true,
-        //   useAllBones: true,
-        //   displayMode: SkeletonViewer.DISPLAY_SPHERE_AND_SPURS,
-        //   displayOptions: {
-        //     sphereBaseSize: 1,
-        //     sphereScaleUnit: 15,
-        //     sphereFactor: 0.9,
-        //     midStep: 0.25,
-        //     midStepFactor: 0.05,
-        //   },
-        // };
+        // Bone에 pickable sphere 부착
+        const spheres = [];
+        skeletons[0].bones
+          .filter((bone) => bone.name !== "Scene")
+          .forEach((bone, idx) => {
+            const sphere = BABYLON.MeshBuilder.CreateSphere("jointSphere", {
+              diameter: 3,
+            });
+            sphere.boneIdx = idx;
+            sphere.renderingGroupId = 3;
+            scene.addMesh(sphere);
 
-        // // skeleton viewer
-        // const skeletonView = new SkeletonViewer(
-        //   skeletons[0],
-        //   meshes[0],
-        //   scene,
-        //   true, //autoUpdateBoneMatrices?
-        //   meshes[0].renderingGroupId > 0 ? meshes[0].renderingGroupId + 1 : 1, // renderingGroup
-        //   SKELETON_VIEWER_OPTION
-        // );
-        // // babylon bug로 인해 초기 isEnabled를 true로 설정
-        // skeletonView.isEnabled = true;
-        //
-        // setTimeout(() => {
-        //   // sphere 및 spurs 지우기
-        //   skeletonView.isEnabled = false;
+            sphere.attachToBone(bone, meshes[0]);
 
-        //   // skeleton 모드 변경
-        //   skeletonView.changeDisplayMode(SkeletonViewer.DISPLAY_SPHERES);
-        //   skeletonView.changeDisplayMode(SkeletonViewer.DISPLAY_LINES);
-        //   skeletonView.changeDisplayMode(SkeletonViewer.DISPLAY_SPHERE_AND_SPURS)
+            spheres.push(sphere);
+          });
 
-        //   // joint 크기 조절
-        //   skeletonView.changeDisplayOptions("sphereBaseSize", 0.5);
-        // }, 2000);
+        scene.onPointerObservable.add((pointerInfo, eventState) => {
+          const { pickInfo } = pointerInfo;
+          if (pickInfo.hit && pickInfo.pickedMesh.name === "jointSphere") {
+            const bone = skeletons[0].bones.filter(
+              (bone) => bone.name !== "Scene"
+            )[pickInfo.pickedMesh.boneIdx];
+            if (currentBone) {
+              gizmoManager.positionGizmoEnabled = false;
+              gizmoManager.rotationGizmoEnabled = false;
+              gizmoManager.scaleGizmoEnabled = false;
+            }
+            setCurrentBone(bone);
+            gizmoManager.positionGizmoEnabled = true;
+            gizmoManager.gizmos.positionGizmo.attachedNode =
+              bone._linkedTransformNode;
+          }
+        }, BABYLON.PointerEventTypes.POINTERPICK);
       }
 
       // transformNodes
@@ -293,28 +237,53 @@ const useBabylon = (currentFile, renderingCanvas) => {
         });
       }
     },
-    [hasController]
+    [currentBone, gizmoManager]
   );
 
   useEffect(() => {
     if (gizmoManager) {
-      // console.log("gizmoManager: ", gizmoManager);
-      // console.log("gizmoAttachableMeshes: ", gizmoAttachableMeshes);
-      gizmoManager.attachableMeshes = gizmoAttachableMeshes;
-    }
-  }, [gizmoAttachableMeshes, gizmoManager]);
-
-  useEffect(() => {
-    if (gizmoManager) {
       const handleKeyDown = (event) => {
-        if (event.key === "w") {
-          gizmoManager.positionGizmoEnabled = !gizmoManager.positionGizmoEnabled;
-        }
-        if (event.key === "e") {
-          gizmoManager.rotationGizmoEnabled = !gizmoManager.rotationGizmoEnabled;
-        }
-        if (event.key === "r") {
-          gizmoManager.scaleGizmoEnabled = !gizmoManager.scaleGizmoEnabled;
+        switch (event.key) {
+          case "w":
+            if (!gizmoManager.positionGizmoEnabled) {
+              gizmoManager.positionGizmoEnabled = true;
+              if (currentBone) {
+                gizmoManager.gizmos.positionGizmo.attachedNode =
+                  currentBone._linkedTransformNode;
+              }
+            }
+            gizmoManager.rotationGizmoEnabled = false;
+            gizmoManager.scaleGizmoEnabled = false;
+            break;
+          case "e":
+            if (!gizmoManager.rotationGizmoEnabled) {
+              gizmoManager.rotationGizmoEnabled = true;
+              if (currentBone) {
+                gizmoManager.gizmos.rotationGizmo.attachedNode =
+                  currentBone._linkedTransformNode;
+              }
+            }
+            gizmoManager.positionGizmoEnabled = false;
+            gizmoManager.scaleGizmoEnabled = false;
+            break;
+          case "r":
+            if (!gizmoManager.scaleGizmoEnabled) {
+              gizmoManager.scaleGizmoEnabled = true;
+              if (currentBone) {
+                gizmoManager.gizmos.scaleGizmo.attachedNode =
+                  currentBone._linkedTransformNode;
+              }
+            }
+            gizmoManager.positionGizmoEnabled = false;
+            gizmoManager.rotationGizmoEnabled = false;
+            break;
+          case "Escape":
+            gizmoManager.positionGizmoEnabled = false;
+            gizmoManager.rotationGizmoEnabled = false;
+            gizmoManager.scaleGizmoEnabled = false;
+            break;
+          default:
+            break;
         }
       };
 
@@ -324,7 +293,7 @@ const useBabylon = (currentFile, renderingCanvas) => {
         document.removeEventListener("keydown", handleKeyDown);
       };
     }
-  });
+  }, [currentBone, gizmoManager]);
 
   // input file 변화 시 호출
   useEffect(() => {
