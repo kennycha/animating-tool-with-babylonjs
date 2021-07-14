@@ -56,21 +56,15 @@ const useBabylon = (currentFile, renderingCanvas) => {
           // console.log("data loaded!");
         });
 
-        // pointer observable에 pick event callback 추가
-        scene.onPointerObservable.add((pointerInfo, eventState) => {
-          const { pickInfo } = pointerInfo;
-          if (pickInfo.hit) {
-            console.log();
-          }
-        }, BABYLON.PointerEventTypes.POINTERPICK);
-
         // gizmo manager 생성 및 observable 설정
         const innerGizmoManager = new BABYLON.GizmoManager(scene);
         innerGizmoManager.usePointerToAttachGizmos = false;
         setGizmoManager(innerGizmoManager);
 
         // gizmo attach observable
-        innerGizmoManager.onAttachedToNodeObservable.add((...params) => {});
+        innerGizmoManager.onAttachedToNodeObservable.add(
+          (transformNode, eventState) => {}
+        );
       }
     },
     [renderingCanvas]
@@ -125,12 +119,11 @@ const useBabylon = (currentFile, renderingCanvas) => {
         transformNodes,
       } = assetContainer;
 
-      console.log("assetContainer: ", assetContainer);
-
       // animation group
       if (animationGroups.length !== 0) {
         animationGroups.forEach((animationGroup) => {
           scene.addAnimationGroup(animationGroup);
+          animationGroup.pause();
         });
       }
 
@@ -199,39 +192,31 @@ const useBabylon = (currentFile, renderingCanvas) => {
 
         // Bone에 pickable sphere 부착
         const spheres = [];
-        skeletons[0].bones
-          .filter((bone) => bone.name !== "Scene")
-          .forEach((bone, idx) => {
+        skeletons[0].bones.forEach((bone, idx) => {
+          if (bone.name !== "Scene") {
             const sphere = BABYLON.MeshBuilder.CreateSphere("jointSphere", {
               diameter: 3,
             });
             sphere.boneIdx = idx;
             sphere.renderingGroupId = 3;
-            scene.addMesh(sphere);
-
             sphere.attachToBone(bone, meshes[0]);
-
             spheres.push(sphere);
-          });
+            scene.addMesh(sphere);
+          }
+        });
 
         scene.onPointerObservable.add((pointerInfo, eventState) => {
           const { pickInfo } = pointerInfo;
           if (pickInfo.hit && pickInfo.pickedMesh.name === "jointSphere") {
-            const bone = skeletons[0].bones.filter(
-              (bone) => bone.name !== "Scene"
-            )[pickInfo.pickedMesh.boneIdx];
+            const bone = skeletons[0].bones[pickInfo.pickedMesh.boneIdx];
 
             gizmoManager.positionGizmoEnabled = false;
             gizmoManager.rotationGizmoEnabled = false;
             gizmoManager.scaleGizmoEnabled = false;
 
-            console.log("bone: ", bone);
-            console.log("transformNode: ", bone._linkedTransformNode);
-
             setCurrentBone(bone);
             gizmoManager.positionGizmoEnabled = true;
-            gizmoManager.gizmos.positionGizmo.attachedNode =
-              bone._linkedTransformNode;
+            gizmoManager.attachToNode(bone._linkedTransformNode);
           }
         }, BABYLON.PointerEventTypes.POINTERPICK);
       }
@@ -254,8 +239,7 @@ const useBabylon = (currentFile, renderingCanvas) => {
             if (!gizmoManager.positionGizmoEnabled) {
               gizmoManager.positionGizmoEnabled = true;
               if (currentBone) {
-                gizmoManager.gizmos.positionGizmo.attachedNode =
-                  currentBone._linkedTransformNode;
+                gizmoManager.attachToNode(currentBone._linkedTransformNode);
               }
             }
             gizmoManager.rotationGizmoEnabled = false;
@@ -265,8 +249,7 @@ const useBabylon = (currentFile, renderingCanvas) => {
             if (!gizmoManager.rotationGizmoEnabled) {
               gizmoManager.rotationGizmoEnabled = true;
               if (currentBone) {
-                gizmoManager.gizmos.rotationGizmo.attachedNode =
-                  currentBone._linkedTransformNode;
+                gizmoManager.attachToNode(currentBone._linkedTransformNode);
               }
             }
             gizmoManager.positionGizmoEnabled = false;
@@ -276,8 +259,7 @@ const useBabylon = (currentFile, renderingCanvas) => {
             if (!gizmoManager.scaleGizmoEnabled) {
               gizmoManager.scaleGizmoEnabled = true;
               if (currentBone) {
-                gizmoManager.gizmos.scaleGizmo.attachedNode =
-                  currentBone._linkedTransformNode;
+                gizmoManager.attachToNode(currentBone._linkedTransformNode);
               }
             }
             gizmoManager.positionGizmoEnabled = false;
