@@ -21,4 +21,4 @@ It will take seconds for loading .fbx file. (Because of the api communication)
 - Detach the gizmo by pressing the 'Escape' key.
 - Change the properties of target bone by dragging the gizmo.
 
-<video src="./public/assets/sample-video.mov"></video>
+https://user-images.githubusercontent.com/59906546/125621359-eb841dbd-bc5c-41a6-80e7-be5511f03d24.mov
