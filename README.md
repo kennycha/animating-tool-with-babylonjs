@@ -1,4 +1,4 @@
-# Sample App with Babylon for Texture-Test
+# Sample App with Babylon
 
 ## Description
 
@@ -8,8 +8,15 @@ The scene will not be re-rendered even after new file is loaded, on purpose.
 
 It will take seconds for loading .fbx file. (Because of the api communication)
 
-## How to use
+## How to Control the Camera
 
-- left click to rotate
-- right click to pan
-- wheel to zoom
+- Left click to rotate.
+- Right click to pan.
+- Wheel to zoom.
+
+## How to Control the Imported Model
+
+- Left click joint spheres which you want to control, then the gizmo will be attached to the related bone.
+- Change the type of the gizmo by pressing 'w', 'e', 'r' keys (default position gizmo).
+- Detach the gizmo by pressing the 'Escape' key.
+- Change the properties of target bone by dragging the gizmo.
