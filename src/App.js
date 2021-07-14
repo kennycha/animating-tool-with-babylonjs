@@ -1,6 +1,7 @@
+import { useCallback, useRef, useState } from "react";
+import * as BABYLON from "@babylonjs/core";
 import { GLTF2Export } from "@babylonjs/serializers";
 import axios from "axios";
-import { useCallback, useRef, useState } from "react";
 import "./App.css";
 import { useBabylon } from "./hooks";
 
@@ -69,16 +70,66 @@ function App() {
     }
   }, [scene]);
 
-  const handleToggleWireframeMode = useCallback(() => {
+  const attachAutoController = useCallback(() => {
     if (scene && scene.isReady()) {
-      scene.forceWireframe = !scene.forceWireframe;
+      scene.skeletons.forEach((skeleton) => {
+        // torus controller 부착
+        skeleton.bones.forEach((bone, idx) => {
+          if (bone.name !== "Scene") {
+            const torusController = BABYLON.MeshBuilder.CreateTorus(
+              "torusController",
+              {
+                diameter: bone.name === "Armature" ? 200 : 30,
+                thickness: 0.5,
+                tessellation: bone.name === "Armature" ? 64 : 32,
+                sideOrientation: BABYLON.Mesh.DOUBLESIDE,
+              },
+              scene
+            );
+            if (bone.name === "Armature") {
+              torusController.rotate(new BABYLON.Vector3(1, 0, 0), Math.PI / 2);
+            }
+            torusController.boneIdx = idx;
+            torusController.renderingGroupId = 3;
+            torusController.renderOverlay = true;
+            torusController.overlayColor = BABYLON.Color3.Purple();
+            torusController.attachToBone(bone, skeleton.overrideMesh);
+            // hover cursor 설정
+            torusController.actionManager = new BABYLON.ActionManager(scene);
+            torusController.actionManager.registerAction(
+              new BABYLON.ExecuteCodeAction(
+                BABYLON.ActionManager.OnPointerOverTrigger,
+                (event) => {
+                  // const { source, meshUnderPointer } = event;
+                  scene.hoverCursor = "pointer";
+                }
+              )
+            );
+            torusController.actionManager.registerAction(
+              new BABYLON.ExecuteCodeAction(
+                BABYLON.ActionManager.OnPointerOutTrigger,
+                (event) => {
+                  // const { source, meshUnderPointer } = event;
+                  scene.hoverCursor = "default";
+                }
+              )
+            );
+          }
+        });
+      });
     }
   }, [scene]);
+
+  // const handleToggleWireframeMode = useCallback(() => {
+  //   if (scene && scene.isReady()) {
+  //     scene.forceWireframe = !scene.forceWireframe;
+  //   }
+  // }, [scene]);
 
   return (
     <div className="app-container">
       <section>
-        <h1>Sample App with Babylon for Texture-Test</h1>
+        <h1>Animating Tool with Babylonjs</h1>
         <p className="description">
           You can use fbx and glb(glTF) format files.
           <br />
@@ -116,9 +167,11 @@ function App() {
         <button className="default-button" onClick={handleLogAnimationGroups}>
           log animationGroups
         </button>
-        <button className="default-button" onClick={handleToggleWireframeMode}>
-          toggle wireframe
-        </button>
+        {currentFile && (
+          <button className="default-button" onClick={attachAutoController}>
+            attach auto controller
+          </button>
+        )}
       </div>
     </div>
   );

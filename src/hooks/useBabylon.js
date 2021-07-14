@@ -191,17 +191,18 @@ const useBabylon = (currentFile, renderingCanvas) => {
         skeletonView.isEnabled = true;
 
         // Bone에 pickable sphere 부착
-        const spheres = [];
         skeletons[0].bones.forEach((bone, idx) => {
           if (bone.name !== "Scene") {
-            const sphere = BABYLON.MeshBuilder.CreateSphere("jointSphere", {
-              diameter: 3,
-            });
+            const sphere = BABYLON.MeshBuilder.CreateSphere(
+              "jointSphere",
+              {
+                diameter: 3,
+              },
+              scene
+            );
             sphere.boneIdx = idx;
             sphere.renderingGroupId = 3;
             sphere.attachToBone(bone, meshes[0]);
-            spheres.push(sphere);
-            scene.addMesh(sphere);
             // hover cursor 설정
             sphere.actionManager = new BABYLON.ActionManager(scene);
             sphere.actionManager.registerAction(
@@ -227,16 +228,35 @@ const useBabylon = (currentFile, renderingCanvas) => {
 
         scene.onPointerObservable.add((pointerInfo, eventState) => {
           const { pickInfo } = pointerInfo;
-          if (pickInfo.hit && pickInfo.pickedMesh.name === "jointSphere") {
-            const bone = skeletons[0].bones[pickInfo.pickedMesh.boneIdx];
+          if (pickInfo.hit) {
+            switch (pickInfo.pickedMesh.name) {
+              case "jointSphere": {
+                const bone = skeletons[0].bones[pickInfo.pickedMesh.boneIdx];
 
-            gizmoManager.positionGizmoEnabled = false;
-            gizmoManager.rotationGizmoEnabled = false;
-            gizmoManager.scaleGizmoEnabled = false;
+                gizmoManager.positionGizmoEnabled = false;
+                gizmoManager.rotationGizmoEnabled = false;
+                gizmoManager.scaleGizmoEnabled = false;
 
-            setCurrentBone(bone);
-            gizmoManager.positionGizmoEnabled = true;
-            gizmoManager.attachToNode(bone._linkedTransformNode);
+                setCurrentBone(bone);
+                gizmoManager.positionGizmoEnabled = true;
+                gizmoManager.attachToNode(bone._linkedTransformNode);
+                break;
+              }
+              case "torusController": {
+                const bone = skeletons[0].bones[pickInfo.pickedMesh.boneIdx];
+
+                gizmoManager.positionGizmoEnabled = false;
+                gizmoManager.rotationGizmoEnabled = false;
+                gizmoManager.scaleGizmoEnabled = false;
+
+                setCurrentBone(bone);
+                gizmoManager.positionGizmoEnabled = true;
+                gizmoManager.attachToNode(bone._linkedTransformNode);
+                break;
+              }
+              default:
+                break;
+            }
           }
         }, BABYLON.PointerEventTypes.POINTERPICK);
       }
