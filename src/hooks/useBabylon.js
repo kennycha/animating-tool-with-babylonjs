@@ -2,7 +2,11 @@ import * as BABYLON from "@babylonjs/core";
 import { SkeletonViewer } from "@babylonjs/core/Debug";
 import "@babylonjs/loaders/glTF";
 import { useCallback, useEffect, useState } from "react";
-import { convertFbxToGlb, getFileExtension } from "../utils";
+import {
+  convertFbxToGlb,
+  getFileExtension,
+  logBonesDirections,
+} from "../utils";
 
 const useBabylon = (currentFile, renderingCanvas) => {
   const [scene, setScene] = useState();
@@ -162,6 +166,9 @@ const useBabylon = (currentFile, renderingCanvas) => {
         skeletons.forEach((skeleton) => {
           scene.addSkeleton(skeleton);
         });
+
+        // 모든 bone의 모든 축 기준 direction을 콘솔에 로그
+        // logBonesDirections(skeletons[0].bones, meshes[0])
 
         const SKELETON_VIEWER_OPTION = {
           pauseAnimations: false,
