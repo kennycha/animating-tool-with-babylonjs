@@ -13,7 +13,10 @@ function App() {
     setCurrentFile(event.target.files[0]);
   };
 
-  const { scene } = useBabylon(currentFile, renderingCanvas);
+  const { scene, loadedObjects, assetContainer } = useBabylon(
+    currentFile,
+    renderingCanvas
+  );
 
   const handleGlbExport = useCallback(() => {
     if (scene && scene.isReady()) {
@@ -58,17 +61,35 @@ function App() {
     }
   }, [scene]);
 
-  const stopAllAnimations = useCallback(() => {
+  const startAllAnimations = useCallback(() => {
     if (scene && scene.isReady()) {
-      scene.stopAllAnimations();
+      loadedObjects.forEach((object) => {
+        object.animationGroups.forEach((animationGroup) => {
+          if (animationGroup.isStarted) {
+            animationGroup.restart();
+          } else {
+            animationGroup.start();
+          }
+        });
+      });
     }
-  }, [scene]);
+  }, [loadedObjects, scene]);
 
-  const handleLogAnimationGroups = useCallback(() => {
+  const pauseAllAnimations = useCallback(() => {
     if (scene && scene.isReady()) {
-      console.log("scene.animationGroups: ", scene.animationGroups);
+      loadedObjects.forEach((object) => {
+        object.animationGroups.forEach((animationGroup) => {
+          animationGroup.pause();
+        });
+      });
     }
-  }, [scene]);
+  }, [loadedObjects, scene]);
+
+  const handleLogAssetContainer = useCallback(() => {
+    if (assetContainer) {
+      console.log("assetContainer: ", assetContainer);
+    }
+  }, [assetContainer]);
 
   const attachAutoController = useCallback(() => {
     if (scene && scene.isReady()) {
@@ -120,6 +141,51 @@ function App() {
     }
   }, [scene]);
 
+  const changeHipPositionAnimation = useCallback(() => {
+    if (scene && scene.isReady()) {
+      console.log("loadedObjects: ", loadedObjects);
+
+      let loadedTransformNodes = [];
+      loadedObjects.forEach(
+        (objectData) =>
+          (loadedTransformNodes = [
+            ...loadedTransformNodes,
+            ...objectData.transformNodes,
+          ])
+      );
+      console.log(
+        "hip transformNodes position: ",
+        loadedTransformNodes
+          .filter((node) => node.name.toLowerCase().includes("hip"))
+          .map((node) => node.position)
+      );
+
+      const animationGroup = loadedObjects[0].animationGroups[0];
+      const hipAnimatable = animationGroup.animatables.find(
+        (anim) => anim.target.name === "mixamorig:Hips"
+      );
+      if (hipAnimatable) {
+        const hipPositionAnimation = hipAnimatable.target.animations[0];
+        // keys가 비어있는 경우 에러 발생 -> 키프레임 찍혀있지 않은 경우 재생 시, animation group에서 제외해야 함
+        // index의 경우 늦게 시작은 가능하나, 빨리 끝낼 수는 없음(에러 발생)
+
+        console.log(
+          "hipPositionAnimation keys: ",
+          hipPositionAnimation.getKeys()
+        );
+        const newKeys = [
+          { frame: 0.5, value: new BABYLON.Vector3(-100, -100, -100) },
+          { frame: 4.5, value: new BABYLON.Vector3(100, 100, 100) },
+        ];
+        hipPositionAnimation.setKeys(newKeys);
+        console.log(
+          "hipPositionAnimation keys: ",
+          hipPositionAnimation.getKeys()
+        );
+      }
+    }
+  }, [scene, loadedObjects]);
+
   // const handleToggleWireframeMode = useCallback(() => {
   //   if (scene && scene.isReady()) {
   //     scene.forceWireframe = !scene.forceWireframe;
@@ -161,16 +227,27 @@ function App() {
         <button className="default-button" onClick={handleLogScene}>
           log scene
         </button>
-        <button className="default-button" onClick={stopAllAnimations}>
-          stop all animations
+        <button className="default-button" onClick={startAllAnimations}>
+          start all animations
         </button>
-        <button className="default-button" onClick={handleLogAnimationGroups}>
-          log animationGroups
+        <button className="default-button" onClick={pauseAllAnimations}>
+          pause all animations
+        </button>
+        <button className="default-button" onClick={handleLogAssetContainer}>
+          log assetContainer
         </button>
         {currentFile && (
-          <button className="default-button" onClick={attachAutoController}>
-            attach auto controller
-          </button>
+          <>
+            <button className="default-button" onClick={attachAutoController}>
+              attach auto controller
+            </button>
+            <button
+              className="default-button"
+              onClick={changeHipPositionAnimation}
+            >
+              change hip position animation
+            </button>
+          </>
         )}
       </div>
     </div>

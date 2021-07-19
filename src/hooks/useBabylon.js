@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   convertFbxToGlb,
   getFileExtension,
-  logBonesDirections,
+  // logBonesDirections,
 } from "../utils";
 
 const useBabylon = (currentFile, renderingCanvas) => {
@@ -14,6 +14,9 @@ const useBabylon = (currentFile, renderingCanvas) => {
 
   const [currentBone, setCurrentBone] = useState(null);
   const [gizmoManager, setGizmoManager] = useState();
+  const [assetContainer, setAssetContainer] = useState();
+
+  const [loadedObjects, setLoadedObjects] = useState([]);
 
   // scene이 준비되면 호출할 함수
   const handleSceneReady = useCallback(
@@ -59,6 +62,9 @@ const useBabylon = (currentFile, renderingCanvas) => {
         scene.onDataLoadedObservable.add((scene, eventState) => {
           // console.log("data loaded!");
         });
+
+        const innerAssetContainer = new BABYLON.AssetContainer(scene);
+        setAssetContainer(innerAssetContainer);
 
         // gizmo manager 생성 및 observable 설정
         const innerGizmoManager = new BABYLON.GizmoManager(scene);
@@ -120,7 +126,7 @@ const useBabylon = (currentFile, renderingCanvas) => {
         meshes,
         textures,
         skeletons,
-        transformNodes,
+        transformNodes: innerTransformNodes,
       } = assetContainer;
 
       // animation group
@@ -269,8 +275,8 @@ const useBabylon = (currentFile, renderingCanvas) => {
       }
 
       // transformNodes
-      if (transformNodes.length !== 0) {
-        transformNodes.forEach((transformNode) => {
+      if (innerTransformNodes.length !== 0) {
+        innerTransformNodes.forEach((transformNode) => {
           scene.addTransformNode(transformNode);
         });
       }
@@ -344,6 +350,11 @@ const useBabylon = (currentFile, renderingCanvas) => {
         scene
       );
       addAssetsToCurrentScene(loadedAssetContainer, scene);
+      const newItem = {
+        fileName: currentFile.name,
+        ...loadedAssetContainer,
+      };
+      setLoadedObjects((prev) => [...prev, newItem]);
     };
 
     const loadGlbFile = async (file, scene) => {
@@ -353,6 +364,11 @@ const useBabylon = (currentFile, renderingCanvas) => {
         scene
       );
       addAssetsToCurrentScene(loadedAssetContainer, scene);
+      const newItem = {
+        fileName: currentFile.name,
+        ...loadedAssetContainer,
+      };
+      setLoadedObjects((prev) => [...prev, newItem]);
     };
 
     const loadBabylonFile = async (file, scene) => {
@@ -362,6 +378,11 @@ const useBabylon = (currentFile, renderingCanvas) => {
         scene
       );
       addAssetsToCurrentScene(loadedAssetContainer, scene);
+      const newItem = {
+        fileName: currentFile.name,
+        ...loadedAssetContainer,
+      };
+      setLoadedObjects((prev) => [...prev, newItem]);
     };
 
     if (scene && currentFile) {
@@ -391,7 +412,7 @@ const useBabylon = (currentFile, renderingCanvas) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [camera, currentFile, scene]);
 
-  return { scene };
+  return { scene, loadedObjects, assetContainer };
 };
 
 export default useBabylon;
