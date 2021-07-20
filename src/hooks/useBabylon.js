@@ -205,7 +205,7 @@ const useBabylon = (currentFile, renderingCanvas) => {
 
         // Bone에 pickable sphere 부착
         skeletons[0].bones.forEach((bone, idx) => {
-          if (bone.name !== "Scene") {
+          if (!bone.name.toLowerCase().includes("scene")) {
             const sphere = BABYLON.MeshBuilder.CreateSphere(
               "jointSphere",
               {
