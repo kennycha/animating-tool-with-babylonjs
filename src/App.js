@@ -174,8 +174,8 @@ function App() {
           hipPositionAnimation.getKeys()
         );
         const newKeys = [
-          { frame: 0.5, value: new BABYLON.Vector3(-100, -100, -100) },
-          { frame: 4.5, value: new BABYLON.Vector3(100, 100, 100) },
+          { frame: 0.5, value: hipAnimatable.target.position },
+          { frame: 4.5, value: BABYLON.Vector3.Zero() },
         ];
         hipPositionAnimation.setKeys(newKeys);
         console.log(
