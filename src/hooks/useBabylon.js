@@ -91,6 +91,7 @@ const useBabylon = (currentFile, renderingCanvas) => {
 
       // create scene
       const innerScene = new BABYLON.Scene(engine);
+      innerScene.useRightHandedSystem = true;
 
       if (innerScene.isReady()) {
         handleSceneReady(innerScene);
@@ -134,6 +135,85 @@ const useBabylon = (currentFile, renderingCanvas) => {
         animationGroups.forEach((animationGroup) => {
           scene.addAnimationGroup(animationGroup);
           animationGroup.pause();
+
+          // animationGroup.animatables.forEach((animatable) => {
+          //   const transformNode = animatable.target;
+          //   const iterCount = transformNode.animations.length;
+
+          //   // const newAnimations = [];
+          //   transformNode.animations.forEach((animation) => {
+          //     if (animation.targetProperty.toLowerCase().includes("position")) {
+          //       console.log(animation.name);
+          //       const newKeys = [
+          //         { frame: 0.5, value: new BABYLON.Vector3(0, 0, 0) },
+          //         { frame: 4.5, value: BABYLON.Vector3.Zero() },
+          //       ];
+          //       animation.setKeys(newKeys);
+          //     }
+
+          //     // const vectorKeys = animation.getKeys();
+          //     // const xValueKeys = vectorKeys.map((key) => ({
+          //     //   frame: key.frame,
+          //     //   value: key.value.x,
+          //     // }));
+          //     // const yValueKeys = vectorKeys.map((key) => ({
+          //     //   frame: key.frame,
+          //     //   value: key.value.y,
+          //     // }));
+          //     // const zValueKeys = vectorKeys.map((key) => ({
+          //     //   frame: key.frame,
+          //     //   value: key.value.z,
+          //     // }));
+          //     // const xAnim = new BABYLON.Animation(
+          //     //   `${animation.name}_x`,
+          //     //   `${animation.targetProperty}.x`,
+          //     //   animation.framePerSecond,
+          //     //   animation.dataType,
+          //     //   animation.loopMode
+          //     // );
+          //     // xAnim.setKeys(xValueKeys);
+          //     // transformNode.animations.push(xAnim);
+          //     // const yAnim = new BABYLON.Animation(
+          //     //   `${animation.name}_y`,
+          //     //   `${animation.targetProperty}.y`,
+          //     //   animation.framePerSecond,
+          //     //   animation.dataType,
+          //     //   animation.loopMode
+          //     // );
+          //     // yAnim.setKeys(yValueKeys);
+          //     // transformNode.animations.push(yAnim);
+          //     // const zAnim = new BABYLON.Animation(
+          //     //   `${animation.name}_z`,
+          //     //   `${animation.targetProperty}.z`,
+          //     //   animation.framePerSecond,
+          //     //   animation.dataType,
+          //     //   animation.loopMode
+          //     // );
+          //     // zAnim.setKeys(zValueKeys);
+          //     // transformNode.animations.push(zAnim);
+          //     // if (animation.targetProperty === "rotationQuaternion") {
+          //     //   const wValueKeys = vectorKeys.map((key) => ({
+          //     //     frame: key.frame,
+          //     //     value: key.value.w,
+          //     //   }));
+          //     //   const wAnim = new BABYLON.Animation(
+          //     //     `${animation.name}_w`,
+          //     //     `${animation.targetProperty}.w`,
+          //     //     animation.framePerSecond,
+          //     //     animation.dataType,
+          //     //     animation.loopMode
+          //     //   );
+          //     //   wAnim.setKeys(wValueKeys);
+          //     //   transformNode.animations.push(wAnim);
+          //     // }
+          //   });
+
+          //   for (let i = 0; i < iterCount + 7; i += 1) {
+          //     transformNode.animations.shift();
+          //   }
+          //   // transformNode.animations = newAnimations;
+          //   // transformNode.animations = [];
+          // });
         });
       }
 
@@ -216,6 +296,7 @@ const useBabylon = (currentFile, renderingCanvas) => {
             sphere.boneIdx = idx;
             sphere.renderingGroupId = 3;
             sphere.attachToBone(bone, meshes[0]);
+            // sphere.attachToBone(bone);
             // hover cursor 설정
             sphere.actionManager = new BABYLON.ActionManager(scene);
             sphere.actionManager.registerAction(
@@ -238,6 +319,44 @@ const useBabylon = (currentFile, renderingCanvas) => {
             );
           }
         });
+
+        // skeletons[0].bones.forEach((bone, idx) => {
+        //   if (idx < 5) {
+        //     const transformNode = bone.getTransformNode();
+
+        //     // bone.computeAbsoluteTransforms()
+        //     // transformNode.computeWorldMatrix()
+
+        //     console.log(
+        //       "----------------------------------------------------------------------------------------"
+        //     );
+        //     console.log("bone name: ", bone.name);
+        //     console.log("--------------------------------------------");
+        //     console.log("bone local position: ", bone.position);
+        //     console.log(
+        //       "transformNode local position: ",
+        //       transformNode.position
+        //     );
+        //     console.log("bone absolute position: ", bone.getAbsolutePosition());
+        //     console.log(
+        //       "transformNode absolute position: ",
+        //       transformNode.getAbsolutePosition()
+        //     );
+        //     console.log(
+        //       "bone world position: ",
+        //       bone.getPosition(BABYLON.Space.WORLD)
+        //     );
+        //     // console.log('bone rotation: ', bone.rotation)
+        //     // console.log('transformNode rotation: ', transformNode.rotation)
+        //     // console.log('bone rotationQuaternion: ', bone.rotationQuaternion)
+        //     // console.log('transformNode rotationQuaternion: ', transformNode.rotationQuaternion)
+        //     // console.log('bone scaling: ', bone.scaling)
+        //     // console.log('transformNode scaling: ', transformNode.scaling)
+        //     console.log(
+        //       "----------------------------------------------------------------------------------------"
+        //     );
+        //   }
+        // });
 
         scene.onPointerObservable.add((pointerInfo, eventState) => {
           const { pickInfo } = pointerInfo;
